@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: sanqing-guan
+    runtime: docker
+    dockerfilePath: ./deploy/Dockerfile
+    dockerContext: .
+    plan: starter
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: "8080"
+      - key: HOST
+        value: 0.0.0.0
+      - key: TRUST_PROXY
+        value: "false"
+      - key: GEO_ENABLED
+        value: "true"
+    # Render 支持 WebSocket 长连接；免费实例会冷启动，正式用付费实例

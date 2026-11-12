@@ -1,0 +1,17 @@
+{
+  "name": "sanqing-guan",
+  "version": "1.0.0",
+  "private": true,
+  "description": "三清观 - 网页 3D 多人在线静心体验（道教版线上寺庙）",
+  "scripts": {
+    "start": "node server/index.js",
+    "geo": "node tools/geo-check.js",
+    "bench": "node tools/bench.js",
+    "smoke": "node tools/smoke.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {},
+  "devDependencies": {}
+}

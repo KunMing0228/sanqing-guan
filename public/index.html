@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+  <meta name="theme-color" content="#0a1422">
+  <meta name="description" content="三清观 · 网页 3D 多人在线静心体验，传统文化沉浸式体验，非宗教活动">
+  <title>三清观 · 上班间隙，进来静一静</title>
+  <link rel="stylesheet" href="./css/style.css">
+  <script type="importmap">
+  { "imports": { "three": "./vendor/three.module.min.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="gl"></canvas>
+
+  <!-- ============ 入观页（同时承担音频解锁的用户手势） ============ -->
+  <div id="gate" class="gate">
+    <div class="gate-inner">
+      <div class="gate-seal">☯</div>
+      <h1>三清观</h1>
+      <p class="gate-sub">上班间隙，进来静一静</p>
+      <div class="gate-divider"><span></span><i>◆</i><span></span></div>
+
+      <p class="gate-label">选一个形象</p>
+      <div class="gender-pick">
+        <button class="gender-card selected" data-g="m" type="button">
+          <div class="mini-avatar male"><i class="bun"></i><i class="eye l"></i><i class="eye r"></i><i class="blush l"></i><i class="blush r"></i></div>
+          <b>小道士</b><small>单髻木簪 · 交领道袍</small>
+        </button>
+        <button class="gender-card" data-g="f" type="button">
+          <div class="mini-avatar female"><i class="bun l"></i><i class="bun r"></i><i class="crown"></i><i class="eye l"></i><i class="eye r"></i><i class="blush l"></i><i class="blush r"></i></div>
+          <b>小道姑</b><small>双环丫髻 · 对襟裙裾</small>
+        </button>
+      </div>
+
+      <div class="hall-pick">
+        <label for="hallSelect">入哪一殿</label>
+        <select id="hallSelect"><option value="">自动安排（人少的殿）</option></select>
+      </div>
+
+      <button id="enterBtn" class="btn-primary" type="button">入 观</button>
+      <p class="gate-note">无需注册 · 不设聊天 · 可以什么都不做</p>
+      <p class="gate-legal">传统文化沉浸式体验，非宗教活动。IP 仅用于即时解析粗粒度归属地，不显示、不存储。<br>经文依《正统道藏》通行本，咒语依《玄门日诵早坛功课经》。</p>
+    </div>
+  </div>
+
+  <!-- ============ 顶部 HUD ============ -->
+  <header id="hudTop" class="hud hud-top hidden">
+    <div class="hud-left">
+      <div class="hall-name"><span id="hallName">三清殿</span><small id="hallSub"></small></div>
+      <div class="stat-row"><b id="onlineNum">1</b> 人在观 · <span id="myName">…</span><span id="genderTag" class="tag">道士</span></div>
+    </div>
+    <div class="hud-right">
+      <button id="btnSound" class="icon-btn" type="button" title="音量 / 静音">♪</button>
+      <button id="btnScripture" class="icon-btn" type="button" title="经文">经</button>
+      <button id="btnWall" class="icon-btn" type="button" title="符箓墙">符</button>
+      <button id="btnPaintings" class="icon-btn" type="button" title="殿内画墙">画</button>
+      <button id="btnSettings" class="icon-btn" type="button" title="设置">设</button>
+    </div>
+  </header>
+
+  <!-- ============ 左侧功课 ============ -->
+  <aside id="hudLeft" class="hud hud-left hidden">
+    <div class="counter-card">
+      <div class="counter-title">今日功课</div>
+      <div class="counter-row"><span>叩拜</span><b id="cBows">0</b></div>
+      <div class="counter-row"><span>捻珠</span><b id="cBeads">0</b><small>/108</small></div>
+      <div class="counter-row"><span>木鱼</span><b id="cMuyu">0</b></div>
+      <div class="counter-row"><span>持诵</span><b id="cChants">0</b></div>
+      <div class="counter-row"><span>功德</span><b id="cMerit">0</b></div>
+      <div class="counter-sep"></div>
+      <div class="counter-row small"><span>全观共修</span><b id="cTotal">0</b></div>
+      <div class="counter-row small"><span>在线</span><b id="cOnline">0</b></div>
+      <div class="audio-mode" id="audioMode">音频待解锁</div>
+    </div>
+  </aside>
+
+  <!-- ============ 右下经文条 ============ -->
+  <div id="scriptureStrip" class="scripture-strip hidden">
+    <div id="scriptureLine" class="scripture-line">人能常清静，天地悉皆归。</div>
+    <div id="scriptureMeta" class="scripture-meta">太上老君说常清静经</div>
+  </div>
+
+  <div id="toastBox" class="toast-box"></div>
+  <div id="zoneHint" class="zone-hint hidden"></div>
+  <div id="statusChip" class="status-chip hidden"></div>
+
+  <!-- ============ 底部操作栏 ============ -->
+  <footer id="hudBottom" class="hud hud-bottom hidden">
+    <div class="action-bar">
+      <button class="act" data-act="palms" type="button"><span>稽</span><label>稽首</label></button>
+      <button class="act" data-act="bow" type="button"><span>拜</span><label>叩拜</label></button>
+      <button class="act" data-act="sit" type="button"><span>坐</span><label>打坐</label></button>
+      <button class="act" data-act="bead" type="button"><span>珠</span><label>捻珠</label></button>
+      <button class="act" data-act="muyu" type="button"><span>木</span><label>木鱼</label></button>
+      <button class="act" data-act="jump" type="button"><span>跃</span><label>跳一跳</label></button>
+      <button class="act" data-act="talisman" type="button"><span>符</span><label>画符</label></button>
+      <button class="act" data-act="paint" type="button"><span>画</span><label>画画</label></button>
+      <button class="act" data-act="chant" type="button"><span>咒</span><label>念咒</label></button>
+      <button class="act" data-act="greet" type="button"><span>礼</span><label>打招呼</label></button>
+    </div>
+    <div class="bottom-hint">空格跳一跳 · 拖拽 360° 转视角 · 滚轮缩放 · 方向键走动（双击前进疾行）· 点蒲团换座 · 殿内才能打坐</div>
+  </footer>
+
+  <!-- ============ 打招呼 ============ -->
+  <section id="panelGreet" class="panel hidden">
+    <div class="panel-head"><h2>打个招呼</h2><button class="close" data-close="panelGreet" type="button">×</button></div>
+    <p class="panel-note">只发表情，不聊天。观内不设文字、私信、加好友与找搭子。</p>
+    <div id="emojiGrid" class="emoji-grid"></div>
+    <div class="field-row">
+      <label for="greetTarget">朝向</label>
+      <select id="greetTarget"><option value="">同殿众人</option></select>
+    </div>
+    <div class="geo-box">
+      <div class="geo-row"><span>你的方位</span><b id="geoPreview">解析中…</b></div>
+      <p class="geo-note">IP 粗粒度归属地，只到城市级；不显示 IP、不存储，不点发送就不会告诉任何人。</p>
+      <label class="switch"><input type="checkbox" id="geoInclude"><span>附上方位一起发送</span></label>
+    </div>
+    <button id="greetSend" class="btn-primary" type="button">发 送</button>
+  </section>
+
+  <!-- ============ 画符 ============ -->
+  <section id="panelTalisman" class="panel panel-wide hidden">
+    <div class="panel-head"><h2>画一道符</h2><button class="close" data-close="panelTalisman" type="button">×</button></div>
+    <div class="talisman-body">
+      <canvas id="talismanCanvas" width="540" height="760"></canvas>
+      <div class="talisman-tools">
+        <p class="tool-label">笔色</p>
+        <div class="swatches">
+          <button class="swatch active" data-color="#b3261e" style="--c:#b3261e" type="button">朱砂</button>
+          <button class="swatch" data-color="#2b2620" style="--c:#2b2620" type="button">墨</button>
+          <button class="swatch" data-color="#b1832c" style="--c:#b1832c" type="button">金</button>
+        </div>
+        <p class="tool-label">笔锋 <span id="brushVal">10</span></p>
+        <input id="brushWidth" class="slider" type="range" min="2" max="26" value="10">
+        <label class="switch"><input type="checkbox" id="guideToggle" checked><span>显示符头 / 符胆参考线</span></label>
+        <div class="tool-btns">
+          <button id="btnUndo" class="btn-ghost" type="button">撤销</button>
+          <button id="btnClearFu" class="btn-ghost" type="button">清空</button>
+          <button id="btnSeal" class="btn-ghost" type="button">敕符盖印</button>
+          <button id="btnDownloadFu" class="btn-ghost" type="button">存为图片</button>
+        </div>
+        <button id="btnPostFu" class="btn-primary" type="button">张贴到符箓墙</button>
+        <p class="tool-note">张贴为匿名展示，只保留最近 12 张，服务重启即清空；不含任何文字输入。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 画画 ============ -->
+  <section id="panelPaint" class="panel panel-wide hidden">
+    <div class="panel-head"><h2>画一幅</h2><button class="close" data-close="panelPaint" type="button">×</button></div>
+    <div class="talisman-body">
+      <canvas id="paintCanvas"></canvas>
+      <div class="talisman-tools">
+        <p class="tool-label">颜色</p>
+        <div class="swatches paint-swatches">
+          <button class="swatch active" data-color="#3a5b8c" style="--c:#3a5b8c" type="button">青</button>
+          <button class="swatch" data-color="#2f6b4f" style="--c:#2f6b4f" type="button">绿</button>
+          <button class="swatch" data-color="#b3261e" style="--c:#b3261e" type="button">朱</button>
+          <button class="swatch" data-color="#c98a2c" style="--c:#c98a2c" type="button">黄</button>
+          <button class="swatch" data-color="#6b4a8a" style="--c:#6b4a8a" type="button">紫</button>
+          <button class="swatch" data-color="#2b2620" style="--c:#2b2620" type="button">墨</button>
+        </div>
+        <p class="tool-label">笔粗 <span id="paintWidthVal">8</span></p>
+        <input id="paintWidth" class="slider" type="range" min="2" max="30" value="8">
+        <div class="tool-btns">
+          <button id="btnPaintUndo" class="btn-ghost" type="button">撤销</button>
+          <button id="btnPaintClear" class="btn-ghost" type="button">清空</button>
+          <button id="btnPaintSave" class="btn-ghost" type="button">存为图片</button>
+        </div>
+        <button id="btnPostPaint" class="btn-primary" type="button">张贴到殿墙</button>
+        <p class="tool-note">张贴后同殿的人都能在殿内画墙看到，只保留最近 8 幅，服务重启即清空；纯手绘，不含文字输入。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 殿内画墙 ============ -->
+  <section id="panelPaintings" class="panel panel-wide hidden">
+    <div class="panel-head"><h2>殿内画墙</h2><button class="close" data-close="panelPaintings" type="button">×</button></div>
+    <p class="panel-note">同殿道友手绘张贴，只留最近 8 幅，不设评论与回复。</p>
+    <div id="paintGrid" class="wall-grid"></div>
+  </section>
+
+  <!-- ============ 经文 / 咒语 ============ -->
+  <section id="panelScripture" class="panel panel-wide hidden">
+    <div class="panel-head"><h2>诵经 · 念咒</h2><button class="close" data-close="panelScripture" type="button">×</button></div>
+    <div class="tabs">
+      <button class="tab active" data-tab="jing" type="button">太上清静经</button>
+      <button class="tab" data-tab="zhou" type="button">八大神咒</button>
+      <button class="tab" data-tab="zan" type="button">经后赞</button>
+    </div>
+    <div class="scripture-body">
+      <div id="tabJing" class="tab-pane">
+        <div class="scripture-head">太上老君说常清静经 <small>《正统道藏》通行本</small></div>
+        <div id="jingLines" class="jing-lines"></div>
+      </div>
+      <div id="tabZhou" class="tab-pane hidden">
+        <select id="mantraSelect" class="select"></select>
+        <div id="mantraText" class="mantra-text"></div>
+      </div>
+      <div id="tabZan" class="tab-pane hidden">
+        <div id="postText" class="mantra-text"></div>
+      </div>
+    </div>
+    <div class="scripture-foot">
+      <button id="btnListen" class="btn-ghost" type="button">▶ 听诵读</button>
+      <button id="btnStopListen" class="btn-ghost" type="button">停止</button>
+      <button id="btnChant" class="btn-primary" type="button">开始持诵</button>
+      <span id="reciteInfo">诵读音轨放在 public/audio/scripture/，点「听诵读」即可收听</span>
+      <span id="chantInfo">每 2.4 秒一句，配一记木鱼；持诵计数由服务端记录</span>
+    </div>
+  </section>
+
+  <!-- ============ 符箓墙 ============ -->
+  <section id="panelWall" class="panel panel-wide hidden">
+    <div class="panel-head"><h2>符箓墙</h2><button class="close" data-close="panelWall" type="button">×</button></div>
+    <p class="panel-note">同殿道友张贴的符，匿名、只留最近 12 张，不设评论与回复。</p>
+    <div id="wallGrid" class="wall-grid"></div>
+  </section>
+
+  <!-- ============ 设置 ============ -->
+  <section id="panelSettings" class="panel hidden">
+    <div class="panel-head"><h2>设置</h2><button class="close" data-close="panelSettings" type="button">×</button></div>
+    <div class="field-row"><label>形象</label>
+      <div class="seg">
+        <button class="seg-btn active" data-look="m" type="button">小道士</button>
+        <button class="seg-btn" data-look="f" type="button">小道姑</button>
+      </div>
+    </div>
+    <button id="btnRename" class="btn-ghost wide" type="button">换一个道号</button>
+    <div class="field-row"><label for="volSlider">音量 <span id="volVal">85</span></label><input id="volSlider" class="slider" type="range" min="0" max="100" value="85"></div>
+    <div class="field-row"><label for="qualitySel">画质</label>
+      <select id="qualitySel" class="select"><option value="high">高清（粒子 / 香烟 / 星光）</option><option value="low">省电（关粒子，降分辨率）</option></select>
+    </div>
+    <div class="field-row"><label for="hallSwitch">换一殿</label><select id="hallSwitch" class="select"></select></div>
+    <label class="switch"><input type="checkbox" id="stripToggle" checked><span>显示右下经文条</span></label>
+    <label class="switch"><input type="checkbox" id="motionToggle"><span>减少动效（低动态模式）</span></label>
+    <div class="about-box">
+      <b>三清观 v1.0</b>
+      <p>传统文化沉浸式体验，非宗教活动。不设聊天、私信、好友、搭子、排行榜，不收费、不占卜、不诱导信仰。</p>
+      <p>经文：《太上老君说常清静经》（《正统道藏》通行本）；咒语：《玄门日诵早坛功课经》八大神咒。</p>
+      <p id="audioDetail">音频：待解锁</p>
+    </div>
+  </section>
+
+  <!-- ============ 状态层 ============ -->
+  <div id="stateOverlay" class="state-overlay hidden">
+    <div class="state-card"><div class="state-icon" id="stateIcon">☯</div><h3 id="stateTitle">正在入观…</h3><p id="stateText">正在准备殿宇</p></div>
+  </div>
+
+  <script type="module" src="./js/main.js"></script>
+</body>
+</html>

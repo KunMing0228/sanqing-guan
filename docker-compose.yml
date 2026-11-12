@@ -1,0 +1,46 @@
+services:
+  sanqing:
+    build:
+      context: .
+      dockerfile: deploy/Dockerfile
+    image: sanqing-guan:1.0.0
+    container_name: sanqing-guan
+    restart: unless-stopped
+    environment:
+      PORT: 8080
+      HOST: 0.0.0.0
+      # 只在 app 前面确实有反代时才开；开启后私网/本机直连被视为可信代理
+      TRUST_PROXY: "${TRUST_PROXY:-false}"
+      TRUSTED_PROXIES: "${TRUSTED_PROXIES:-127.0.0.1,::1}"
+      GEO_ENABLED: "${GEO_ENABLED:-true}"
+    # 正式环境建议只让 Nginx 暴露 80/443，把这行 ports 注释掉，改用 expose
+    ports:
+      - "${PORT:-8080}:8080"
+    expose:
+      - "8080"
+    networks:
+      - sanqing-net
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://127.0.0.1:8080/healthz',r=>process.exit(r.statusCode===200?0:1)).on('error',()=>process.exit(1))"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+    # 200 人在线实测 RSS 约 65MB，给 256MB 足够；再大按 DEPLOY.md 扩容
+    mem_limit: 256m
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: sanqing-nginx
+    restart: unless-stopped
+    depends_on:
+      - sanqing
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - sanqing-net
+
+networks:
+  sanqing-net:
+    driver: bridge
